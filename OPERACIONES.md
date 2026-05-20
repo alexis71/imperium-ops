@@ -49,6 +49,8 @@ Estado de ejecución del ecosistema.
 - **Backup diario**: `_ops/backup-daily.ps1` vía Task Scheduler (`Imperium-BackupDaily`, 03:00) ·
   9 DBs (3 Postgres dump + 6 SQLite copy) · retención en `_backups/`.
 - **Convive con Obsidia** (proyecto paralelo en WSL2+Docker) · NO tocar · ver memoria.
+- **Versionado**: este directorio `_ops/` es el repo `imperium-ops` (GitHub privado · scripts +
+  docs · `.gitignore` excluye `CREDENCIALES.txt`, backups, installers y logs).
 
 ### Plantilla · cambio en producción
 ```
@@ -68,7 +70,7 @@ Postura de seguridad y registro de hardening.
 - **Auth**: JWT access+refresh · Admin con MFA TOTP obligatorio.
 - **Webhooks**: firmados HMAC-SHA256.
 - **Secretos**: `.env` gitignored · backup consolidado en `Desktop/IMPERIUM_SECRETS.txt`.
-- **Repos**: 13/13 privados en GitHub · gitleaks 0 leaks (N°67).
+- **Repos**: 14/14 privados en GitHub (incluye `imperium-ops`) · gitleaks 0 leaks (N°67).
 
 ### Política npm · cadena de suministro
 - **Riesgo**: un `npm install` puede ejecutar malware vía scripts `postinstall`/`preinstall` de un
