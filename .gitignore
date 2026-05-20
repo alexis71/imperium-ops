@@ -1,0 +1,19 @@
+# Secretos · NUNCA versionar
+CREDENCIALES.txt
+
+# Logs y datos regenerables
+backup.log
+logs/
+
+# Backups pesados / sensibles
+backups/
+_backups/
+
+# Herramientas externas clonadas / binarios
+codeflow/
+installers/
+
+# DB y dependencias
+*.db
+*.sqlite
+node_modules/
