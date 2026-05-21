@@ -71,6 +71,9 @@ Postura de seguridad y registro de hardening.
 - **Webhooks**: firmados HMAC-SHA256.
 - **Secretos**: `.env` gitignored · backup consolidado en `Desktop/IMPERIUM_SECRETS.txt`.
 - **Repos**: 14/14 privados en GitHub (incluye `imperium-ops`) · gitleaks 0 leaks (N°67).
+- **Pre-commit hook**: gitleaks en los 12 repos locales · bloquea commits con secretos · hook
+  canónico en `_ops/git-hooks/pre-commit` · reinstalar con `bash _ops/install-git-hooks.sh` ·
+  bypass de falso positivo: `git commit --no-verify`.
 
 ### Política npm · cadena de suministro
 - **Riesgo**: un `npm install` puede ejecutar malware vía scripts `postinstall`/`preinstall` de un
@@ -91,6 +94,7 @@ Postura de seguridad y registro de hardening.
 ### Auditoría periódica (cada 3-6 meses)
 Firewall · gitleaks · `.env` no trackeados · backup freshness · MFA · encryption · `npm-audit-all.sh`
 · visibilidad repos GitHub. Ver roadmap Forge §"Ops · Security audit".
+**Próxima ventana: 2026-08-20 → 2026-11-20** (3-6 meses desde el audit N°67 del 2026-05-20).
 
 ### Plantilla · entrada de hardening
 ```

@@ -1,0 +1,23 @@
+#!/bin/sh
+# pre-commit · gitleaks · bloquea commits con secretos (Imperium · N°67).
+# Canónico en _ops/git-hooks/pre-commit · instalar con _ops/install-git-hooks.sh
+# Bypass de emergencia (falso positivo): git commit --no-verify
+
+GITLEAKS="$(command -v gitleaks 2>/dev/null || echo /c/Users/Administrator/bin/gitleaks.exe)"
+
+if [ ! -e "$GITLEAKS" ]; then
+  echo "[pre-commit] gitleaks no encontrado · commit permitido SIN escaneo de secretos."
+  echo "             instalar gitleaks para reactivar la protección."
+  exit 0
+fi
+
+"$GITLEAKS" git --staged --no-banner --redact .
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "✖ [pre-commit] gitleaks detectó posibles secretos en los cambios staged."
+  echo "  Commit BLOQUEADO. Revisá los hallazgos de arriba."
+  echo "  Si es un falso positivo confirmado: git commit --no-verify"
+  exit 1
+fi
+
+exit 0
