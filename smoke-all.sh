@@ -6,6 +6,10 @@
 
 set -e
 
+# N°68 · Node migrado a nvm4w (setup Obsidia · C:\Program Files\nodejs eliminado).
+# Sin esto, node/npm/npx/pm2 no resuelven y `set -e` mata el smoke en el check pm2.
+export PATH="/c/nvm4w/nodejs:/c/Users/Administrator/AppData/Roaming/npm:$PATH"
+
 PASS=0
 FAIL=0
 RESULTS=()
