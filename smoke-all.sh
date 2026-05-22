@@ -575,6 +575,37 @@ ST_RES=$(curl -s -X POST http://localhost:3020/api/v1/billing/webhooks/stripe -H
 if echo "$ST_RES" | grep -q '"error":"STRIPE_WEBHOOK_SECRET no configurado"'; then echo "  ✅ Stripe webhook · 401 sin secret (sandbox correcto)"; PASS=$((PASS + 1)); else echo "  ❌ Stripe webhook · respuesta inesperada: $ST_RES"; FAIL=$((FAIL + 1)); RESULTS+=("❌ Stripe webhook"); fi
 
 echo ""
+echo "── Finance export contable NIF (D · N°69) ──"
+FINT=$(curl -s -X POST http://localhost:3030/api/v1/auth/login -H "Content-Type: application/json" -d '{"email":"alejandro.rodriguez@muselecom.com","password":"CambiarEnProd2026!"}' | grep -o '"accessToken":"[^"]*"' | sed 's/.*:"//;s/"//')
+if [ -n "$FINT" ]; then
+  CHARTCSV=$(curl -s "http://localhost:3030/api/v1/reports/export/chart.csv" -H "Authorization: Bearer $FINT")
+  if echo "$CHARTCSV" | grep -q 'CodigoAgrupadorSAT'; then
+    echo "  ✅ Finance /reports/export/chart.csv · catálogo con código agrupador SAT"
+    PASS=$((PASS + 1))
+  else
+    echo "  ❌ Finance chart.csv export · falta CodigoAgrupadorSAT"
+    FAIL=$((FAIL + 1)); RESULTS+=("❌ Finance chart.csv export")
+  fi
+  FINPER=$(curl -s "http://localhost:3030/api/v1/periods" -H "Authorization: Bearer $FINT" | grep -o '"id":"[^"]*"' | head -1 | sed 's/.*:"//;s/"//')
+  if [ -n "$FINPER" ]; then
+    TBCSV=$(curl -s "http://localhost:3030/api/v1/reports/export/trial-balance.csv?periodId=$FINPER" -H "Authorization: Bearer $FINT")
+    if echo "$TBCSV" | grep -q 'Cargos,Abonos'; then
+      echo "  ✅ Finance /reports/export/trial-balance.csv · balanza de comprobación"
+      PASS=$((PASS + 1))
+    else
+      echo "  ❌ Finance trial-balance.csv export · header inesperado"
+      FAIL=$((FAIL + 1)); RESULTS+=("❌ Finance trial-balance.csv export")
+    fi
+  else
+    echo "  ❌ Finance periods · sin periodo para balanza"
+    FAIL=$((FAIL + 1)); RESULTS+=("❌ Finance periods N°69")
+  fi
+else
+  echo "  ❌ Finance login falló · export checks omitidos"
+  FAIL=$((FAIL + 1)); RESULTS+=("❌ Finance login N°69")
+fi
+
+echo ""
 echo "── Ops infra (backup freshness · N°66) ──"
 BACKUP_LOG=/c/Users/Administrator/Desktop/_ops/backup.log
 if [ -f "$BACKUP_LOG" ]; then
