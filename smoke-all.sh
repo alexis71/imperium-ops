@@ -237,6 +237,35 @@ else
 fi
 
 echo ""
+echo "── HR Nómina operativa (Thread C · N°69) ──"
+if [ -n "$HR_TOK" ]; then
+  NOMRUN=$(curl -s -X POST http://localhost:3040/api/v1/payroll -H "Authorization: Bearer $HR_TOK" -H 'Content-Type: application/json' -d '{"periodLabel":"Smoke · quincena","periodStart":"2026-05-01","periodEnd":"2026-05-15","runType":"ordinaria"}')
+  NOMID=$(echo "$NOMRUN" | grep -oE '"id":"[^"]+"' | head -1 | sed 's/"id":"//;s/"$//')
+  NOMITEMS=$(echo "$NOMRUN" | grep -oE '"employeeId":"' | wc -l)
+  if [ -n "$NOMID" ] && [ "$NOMITEMS" -ge 6 ]; then
+    echo "  ✅ HR /payroll generar · $NOMITEMS renglones (snapshot empleados activos)"
+    PASS=$((PASS + 1))
+  else
+    echo "  ❌ HR /payroll generar · run=$NOMID items=$NOMITEMS"
+    FAIL=$((FAIL + 1)); RESULTS+=("❌ HR payroll generar")
+  fi
+  if [ -n "$NOMID" ]; then
+    NOMCSV=$(curl -s "http://localhost:3040/api/v1/payroll/$NOMID/export.csv" -H "Authorization: Bearer $HR_TOK")
+    if echo "$NOMCSV" | grep -q 'NetoPagado'; then
+      echo "  ✅ HR /payroll/:id/export.csv · nómina para el contador"
+      PASS=$((PASS + 1))
+    else
+      echo "  ❌ HR payroll export.csv · header inesperado"
+      FAIL=$((FAIL + 1)); RESULTS+=("❌ HR payroll export.csv")
+    fi
+    # cleanup · descarta la corrida draft del smoke (no acumula)
+    curl -s -o /dev/null -X DELETE "http://localhost:3040/api/v1/payroll/$NOMID" -H "Authorization: Bearer $HR_TOK"
+  fi
+else
+  echo "  ⊘ HR Nómina · sin token (login falló arriba)"
+fi
+
+echo ""
 echo "── CRM domain (G.4 N°38) ──"
 CRM_LOGIN=$(curl -s -X POST http://localhost:3060/api/v1/auth/login -H 'Content-Type: application/json' -d '{"email":"alejandro.rodriguez@muselecom.com","password":"CambiarEnProd2026!"}')
 CRM_TOK=$(echo "$CRM_LOGIN" | grep -oE '"accessToken":"[^"]+"' | head -1 | sed 's/"accessToken":"//;s/"$//')
