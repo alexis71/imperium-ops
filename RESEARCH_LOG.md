@@ -15,6 +15,11 @@
 
 ---
 
+## 📚 Catálogo de repos externos evaluados → `REPO_EVAL_CATALOG.md`
+Todo repo externo analizado (área · uso · licencia · veredicto venta · medusa) se guarda en `_ops/REPO_EVAL_CATALOG.md` para reuso cross-proyecto. Batch N°85 (2026-06-01): 16 repos (Chart.js ★ adoptar · cve-mcp/shannon seguridad interna · resto nicho/ref). Regla licencia→venta: memoria `feedback_license_gate_para_venta`.
+
+---
+
 ## Por feature / concepto
 
 ### Knowledge graph del codebase (Forge audit · KP · RT)

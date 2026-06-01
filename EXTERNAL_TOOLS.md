@@ -21,6 +21,7 @@
 | **github-research skill** | (built-in skill) | `.claude/skills/` | Buscar 3-5 OSS refs antes de implementar módulo nuevo | Adoptado del workflow WigFlow |
 | **simplify skill** | (built-in skill) | `.claude/skills/` | Code review post-cambio · busca reuse | Calidad post-feature work |
 | **medusa (medusa-security)** | 2026.5.9 | `Desktop/_ops/medusa-env/Scripts/medusa.exe` (venv aislado) | **Due diligence pre-adopción de OSS externos** · NO scanner de verticales Imperium | Repo: https://github.com/Pantheon-Security/medusa · AGPL-3.0 (OK para CLI privado · no SaaS · no redistribución) · evaluado 2026-05-22 contra NK · ver § medusa abajo |
+| **chart.js + react-chartjs-2** | 4.5.1 + 5.3.1 | dep de `<vertical>/client` (bundle SaaS) | Gráficas premium en dashboards · reemplaza SVG hechos a mano | **Ambos MIT ✅ vendibles** · SE SIRVEN al cliente (no dev-tool) · consumidos vía wrapper Forge `@nomadknight/charts` (ver § charts) · adoptados N°85 spike Kompaws |
 
 ---
 
@@ -312,3 +313,19 @@ Cuando aparezca un repo/tool nuevo a evaluar:
 - **Adopción controlada vale como adopción legítima.** No descartar a priori solo por riesgo · si hay rollback path claro, probar en sandbox.
 - **Post-rollback ≠ archivar y olvidar.** Un tool que falló enseña por qué falló · ese conocimiento se documenta para futuras evaluaciones similares.
 - Ver memoria autoritativa: `[[feedback_tool_adoption_controlled_rollback]]` (2026-05-14)
+
+---
+
+## 🟢 charts · Chart.js vía Forge `@nomadknight/charts` (N°85 · 2026-06-01)
+
+**Externo adoptado:** `chart.js`@4.5.1 + `react-chartjs-2`@5.3.1 — **ambos MIT** ✅ (vendibles · se sirven al cliente, no son dev-tool).
+
+**Vehículo de consumo (interno):** paquete Forge `Imperium_Forge/packages/extensions/charts` (`@nomadknight/charts`) — wrapper premium estilo Hub (gradiente + sombras + glow-cap + monospace), accent/tono por vertical via CSS var. peerDeps: react, chart.js, react-chartjs-2.
+
+**Por qué:** reemplaza los `RevenueChart` SVG **clonados** en ~8 verticales (deuda template-clone) por un componente compartido. Mejor UX (tooltips reales) + identidad consistente.
+
+**Estado:** adoptado en **Kompaws** (piloto/reel). Pusheado: Forge `3940953` + Kompaws `eed8b4d`. Rollout a 7 verticales **planeado, diferido** (reframe) → `00-DOCS-MAESTRAS/CHARTS_ROLLOUT_2026-06-01.md`.
+
+**Rollback (por vertical):** `git checkout Negocio.jsx package.json` + `npm uninstall chart.js react-chartjs-2 @nomadknight/charts`. El SVG viejo vive en git history. Eliminar el paquete = borrar `packages/extensions/charts`.
+
+**Due diligence:** medusa scan de chart.js (N°85) → GitLeaks/CVE/MCP-RCE limpios. Ver `[[feedback_license_gate_para_venta]]`.
