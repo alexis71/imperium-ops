@@ -42,15 +42,24 @@ New-Item -ItemType Directory -Force -Path "$backupDir\sqlite" | Out-Null
 # ── Postgres dumps ──────────────────────────────────────────
 $pgDump = "C:\Program Files\PostgreSQL\16\bin\pg_dump.exe"
 
+# Secretos PG cifrados con DPAPI LocalMachine (N°86) · ver setup-pg-backup-secrets.ps1
+# LocalMachine: la tarea corre como SYSTEM y debe poder descifrar.
+Add-Type -AssemblyName System.Security
+$pgSecFile = Join-Path $PSScriptRoot 'pg-backup-secrets.dpapi'
+if (-not (Test-Path $pgSecFile)) { throw "Falta $pgSecFile · correr setup-pg-backup-secrets.ps1" }
+$pgSec = @{}
+$pgPlain = [System.Text.Encoding]::UTF8.GetString([System.Security.Cryptography.ProtectedData]::Unprotect([System.IO.File]::ReadAllBytes($pgSecFile), $null, [System.Security.Cryptography.DataProtectionScope]::LocalMachine))
+($pgPlain -split "`r?`n") | ForEach-Object { if ($_ -match '^([^=]+)=(.*)$') { $pgSec[$Matches[1]] = $Matches[2] } }
+
 Try-Step "ia_admin_db" {
-    $env:PGPASSWORD = "dd3e272a536b7b87cfda730aea540e5f"
+    $env:PGPASSWORD = $pgSec['ia_admin_db']
     & $pgDump -U ia_admin_user -h localhost -p 5432 `
         -F custom -f "$backupDir\postgres\ia_admin_db.dump" ia_admin_db
     if ($LASTEXITCODE -ne 0) { throw "pg_dump exit $LASTEXITCODE" }
 }
 
 Try-Step "ia_hub_db" {
-    $env:PGPASSWORD = "dc7a273e7f97c2ff5d5fefbe0e76e5e7"
+    $env:PGPASSWORD = $pgSec['ia_hub_db']
     & $pgDump -U ia_hub_user -h localhost -p 5432 `
         -F custom -f "$backupDir\postgres\ia_hub_db.dump" ia_hub_db
     if ($LASTEXITCODE -ne 0) { throw "pg_dump exit $LASTEXITCODE" }

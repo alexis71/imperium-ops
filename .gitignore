@@ -1,5 +1,9 @@
 # Secretos · NUNCA versionar
 CREDENCIALES.txt
+*.dpapi
+pg-backup-secrets.dpapi
+*.bak-n86
+backup-daily.ps1.bak-n86
 
 # Logs y datos regenerables
 backup.log
