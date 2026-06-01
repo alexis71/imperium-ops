@@ -184,23 +184,26 @@ if echo "$DEMO1_HUB" | grep -q "accessToken"; then
   fi
 
   echo ""
-  echo "── Hub cross-vertical pull (Admin broker → NK Incidents N°25) ──"
+  echo "── Hub cross-vertical pull (consolidado · N°25 → actualizado N°86) ──"
+  # N°86: la ruta finanzas-demo.js ya no emite incidentsTrend30d/incidentsBySeverity
+  # (forma vieja N°25 · removida en el sweep fachada N°83). Se valida el contrato real
+  # actual: el rollup consolidado cross-vertical + la serie de tendencia.
   CV=$(curl -s "http://localhost:3020/api/v1/finanzas/cross-vertical" -H "Authorization: Bearer $HUBT")
-  if echo "$CV" | grep -q '"incidentsTrend30d"'; then
-    echo "  ✅ Hub pull /finanzas/cross-vertical · incidentsTrend30d presente (NK N°25)"
+  if echo "$CV" | grep -q '"consolidated"'; then
+    echo "  ✅ Hub pull /finanzas/cross-vertical · rollup consolidado presente"
     PASS=$((PASS + 1))
   else
-    echo "  ❌ Hub pull /finanzas/cross-vertical · falta incidentsTrend30d"
+    echo "  ❌ Hub pull /finanzas/cross-vertical · falta consolidated"
     FAIL=$((FAIL + 1))
-    RESULTS+=("❌ Hub cross-vertical NK trend30d")
+    RESULTS+=("❌ Hub cross-vertical consolidated")
   fi
-  if echo "$CV" | grep -q '"incidentsBySeverity"'; then
-    echo "  ✅ Hub pull · incidentsBySeverity presente"
+  if echo "$CV" | grep -q '"totalImpactMXN"'; then
+    echo "  ✅ Hub pull · totalImpactMXN (impacto cross-vertical) presente"
     PASS=$((PASS + 1))
   else
-    echo "  ❌ Hub pull · falta incidentsBySeverity"
+    echo "  ❌ Hub pull · falta totalImpactMXN"
     FAIL=$((FAIL + 1))
-    RESULTS+=("❌ Hub cross-vertical NK severity")
+    RESULTS+=("❌ Hub cross-vertical totalImpactMXN")
   fi
 
   echo ""
