@@ -17,3 +17,20 @@ installers/
 *.db
 *.sqlite
 node_modules/
+
+# Herramientas de seguridad (binarios pesados) · rollback = borrar dir
+sectools/
+medusa-env/
+
+# Outputs/evidencia regenerables (scans, auditorías, screenshots)
+medusa-scan-*/
+medusa-security-review-*/
+security-audit-own-*/
+verify-*-evidence/
+verify-*-shots/
+*.log
+
+# Presentaciones y artefactos de sesión (viven en Sesiones/)
+presentations/
+activador-*.txt
+sesion-*.txt

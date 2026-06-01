@@ -20,6 +20,7 @@
 | **Verify-fix-loop skill** | (built-in skill) | `.claude/skills/` | build → test → lint loop hasta passing | Cubre rol de OMC team mode |
 | **github-research skill** | (built-in skill) | `.claude/skills/` | Buscar 3-5 OSS refs antes de implementar módulo nuevo | Adoptado del workflow WigFlow |
 | **simplify skill** | (built-in skill) | `.claude/skills/` | Code review post-cambio · busca reuse | Calidad post-feature work |
+| **medusa (medusa-security)** | 2026.5.9 | `Desktop/_ops/medusa-env/Scripts/medusa.exe` (venv aislado) | **Due diligence pre-adopción de OSS externos** · NO scanner de verticales Imperium | Repo: https://github.com/Pantheon-Security/medusa · AGPL-3.0 (OK para CLI privado · no SaaS · no redistribución) · evaluado 2026-05-22 contra NK · ver § medusa abajo |
 
 ---
 
@@ -97,6 +98,77 @@ aider · claw · droid · trae · trae-cn · hermes · kimi · kiro · pi · ant
 - NO obliga a estandarizar todos los equipos/freelancers en Claude Code. Si "el otro equipo" (referido en memoria `user_alejandro`) usa Cursor/Codex/Gemini CLI, pueden consumir el mismo grafo.
 - Reduce lock-in a Anthropic · útil si en futuro se evalúa migración o multi-provider strategy.
 - Facilita onboarding de freelancers temporales sin requerirles adoptar nuestro setup completo de skills/hooks/MCP.
+
+---
+
+## 🟢 medusa · due diligence externa (eval 2026-05-22)
+
+**Repo:** https://github.com/Pantheon-Security/medusa · 568 ⭐ · AGPL-3.0
+**Versión instalada:** medusa-security 2026.5.9 · venv `Desktop/_ops/medusa-env/`
+**Install:**
+```powershell
+& "$env:LOCALAPPDATA\Programs\Python\Python312\python.exe" -m venv "C:\Users\Administrator\Desktop\_ops\medusa-env"
+& "C:\Users\Administrator\Desktop\_ops\medusa-env\Scripts\python.exe" -m pip install medusa-security
+```
+**Uninstall (rollback):** `Remove-Item -Recurse -Force C:\Users\Administrator\Desktop\_ops\medusa-env`
+
+### Hallazgo crítico de la evaluación
+
+Medusa **NO es un scanner standalone** · es un **orquestador** que delega a linters externos (ESLint · gitleaks · hadolint · shellcheck · stylelint · kube-linter · etc). Sin esos linters instalados en el venv:
+- JS/TS no se escanea (JavaScriptScanner = "Tool missing")
+- Solo corren los ~20 scanners Python-nativos · todos AI-focused (AIContextScanner · MCPConfigScanner · PromptLeakageScanner · etc)
+
+### Por qué NO usar como scanner regular de verticales
+
+| Test | Resultado |
+|------|-----------|
+| Scan NK · 111 archivos · 26,787 LOC · 13.12s | 54 findings · **100% falsos positivos** |
+| Cobertura JS/TS real | **0%** (ESLint no instalado · y si lo instalamos, lo tenemos ya en cada vertical) |
+| Cobertura CLAUDE.md (AIContextScanner) | 100% ruido · marca árboles de directorios como "GCG adversarial suffix" · code fences como "code-generation-trigger" · listas tech stack como "Payload Splitting" |
+| Valor agregado vs TikiTribe + ESLint propio | Ninguno en código real |
+
+### Por qué SÍ retener para due diligence externa
+
+Use case PERFECTO: **scanear repos OSS antes de adoptarlos** como parte del flujo de 11 pasos de evaluación.
+
+```powershell
+& "C:\Users\Administrator\Desktop\_ops\medusa-env\Scripts\medusa.exe" scan -g user/repo
+# o por URL:
+& "C:\Users\Administrator\Desktop\_ops\medusa-env\Scripts\medusa.exe" scan -g https://github.com/user/repo
+```
+
+Detecta en el repo target:
+- **MCPConfigScanner** · vulns en config de MCP servers de terceros
+- **AIContextScanner** · prompt injection patterns en sus `.cursorrules` · `CLAUDE.md` · `AGENTS.md`
+- **DatasetInjectionScanner** · payloads en sus data sources
+- **CriticalCVEScanner** · CVEs conocidas en sus deps lock files
+- **EnvScanner** · secrets accidentales en `.env`
+- **AgentMemoryScanner** · patterns sospechosos en memory configs
+- **LLMOpsScanner** · misconfigs en pipelines LLM
+
+Para repos externos (terreno desconocido) el ruido AIContextScanner se vuelve señal · vale leer los hits manualmente.
+
+### Cuándo correr
+
+- **Trigger automático:** cada vez que el user pasa un nuevo repo a evaluar (workflow `/external-repos`) · agregar `medusa scan -g <repo>` antes del veredicto
+- **NO correr contra:** verticales Imperium · KP · NK · RT · Sales · HR · CRM · Forge · Admin · Hub · Finance (genera 100% ruido contra sus CLAUDE.md propios)
+
+### Notas técnicas
+
+- Reports en JSON/HTML/markdown en `<outDir>/medusa-scan-<timestamp>.json`
+- `raw-payloads.json` separado con `original_code` por finding (campo vacío en findings principales por default `--ai-safe` mode · evita que LLMs ejecuten patterns por accidente al leer reportes)
+- `--fail-on critical` rompe con bug `'dict' object has no attribute 'severity'` · NO usar · usar exit code 0 + parsear JSON
+- Cache en `<repo>/.medusa-cache/` · `--no-cache` para reset
+- 41 FPs filtered auto (43.2%) en el scan NK · el FP filter funciona pero no captura el ruido sistémico de AIContextScanner contra docs legítimas
+
+### Comparación con alternativas
+
+| Tool | Caso de uso | Cuándo |
+|------|-------------|--------|
+| **TikiTribe rules** + Claude reading context | Reglas OWASP curadas en nuestro código | Siempre (ya activo en NK · expandir a otros verticales) |
+| **ESLint + eslint-plugin-security** | Lint JS/TS de nuestros verticales | Per-vertical en CI · ya parte del stack |
+| **medusa scan -g <repo>** | Due diligence pre-adopción OSS externo | Al evaluar nuevo repo · workflow integrado |
+| **AgentShield** (everything-claude-code) | Reglas para AI-tooling (futuro) | Pendiente cherry-pick post-piloto |
 
 ---
 

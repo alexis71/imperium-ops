@@ -1,7 +1,7 @@
 # Imperium · Runbook de Troubleshooting
 
 > **Single source of truth** · síntomas conocidos · scripts fix · checklists por escenario.
-> Actualizado: 2026-05-13 · sesión N°27+
+> Actualizado: 2026-05-25 · sesión N°70+
 >
 > **Filosofía:** todo problema documentado aquí debe tener (1) síntoma observable · (2) causa raíz · (3) script fix ejecutable · (4) verificación.
 
@@ -31,6 +31,9 @@
 | Almena gerente cliente NO entra con email/password | Almena usa **pbkdf2** custom (NO bcrypt) en LicenseActivation.gerenteHash · si se creó con bcrypt → falla | Usar `hashPw()` pbkdf2 de auth.js · ver § Almena auth gotcha |
 | Almena super-admin no ve tab "Empresas" post-login | role en User table debe ser 'admin' · si se creó sin role correcto, redirect a /dashboard | `node scripts/migrate-super-admin-from-env.js` (corrige role) |
 | Backup diario · `WARN · <name>_dev.db · VACUUM INTO unavailable, used file-copy fallback` | Vertical corre en modo Postgres · su `schema.prisma` declara `provider = "postgresql"` y Prisma rechaza URL `file:` · fallback a Copy-Item es **seguro y esperado** | Ver § Caso crónico #6 · solo investigar si vertical debería estar en modo SQLite |
+| smoke-cron.sh / scripts pm2 fallan silentes desde Task Scheduler o servicio Windows | `bash` resuelve a `C:\Windows\System32\bash.exe` (WSL launcher) en vez de Git Bash · WSL no ve paths Windows | Usar path absoluto Git Bash: `"C:\Program Files\Git\bin\bash.exe" script.sh` · N°67 |
+| pm2 muestra procesos "online" pero apuntan a node viejo (post-upgrade Node nvm4w) | dump.pm2 tiene `node_path` del install anterior · procesos fantasma sin escuchar puertos | `pm2 kill && pm2 delete all && pm2 start ecosystem.config.js && pm2 save` · N°68 |
+| `medusa scan -g <repo>` reporta vulnerabilidades en repo externo a adoptar | Repo OSS tiene MCP exposures · prompt injection en CLAUDE.md/cursorrules · CVEs en lockfile | Ver § Due diligence repos externos · NO adoptar sin revisar findings · N°70 |
 
 ---
 
@@ -468,9 +471,57 @@ Si ves `synced: { hr: { ok: 4, failed: 0 } }` → ✅ funciona.
 
 ---
 
+## 🔍 Due diligence repos externos · medusa scan (N°70)
+
+> Antes de adoptar cualquier repo OSS (skill · plugin · librería externa con código a ejecutar) · ejecutar `medusa scan` y revisar findings. Aplica a: GitHub clones, npm dependencies grandes, MCP servers, claude skills externos.
+
+### Cuándo aplicar
+
+- Skill nuevo de GitHub (`~/.claude/skills/...`)
+- Plugin Claude Code de terceros
+- npm package con código que se ejecuta (no solo data)
+- MCP server externo a configurar
+- Cualquier repo con `CLAUDE.md` · `cursorrules` · `.continuerules` (vectores de prompt injection)
+
+### Cuándo NO aplicar
+
+- Verticales propios (NK · KP · RT · Imperium_*) — son nuestros
+- Librerías UI/CSS sin ejecutable (TailwindCSS · Lucide icons · etc.)
+- Docs/data-only (markdown sin código)
+
+### Comando
+
+```bash
+cd Desktop/_ops/medusa-env
+source bin/activate  # o equivalente Windows
+medusa scan -g https://github.com/USER/REPO
+medusa scan -g /path/to/local/clone
+```
+
+### Findings críticos · NO adoptar si aparecen
+
+- **Prompt injection** en `CLAUDE.md` / `AGENTS.md` / `cursorrules` (instrucciones ocultas que hijack al asistente)
+- **MCP exposure** (servers MCP que leakean filesystem · env vars · creds)
+- **CVE high/critical** en `package-lock.json` / `yarn.lock`
+- **Eval/exec dinámico** sin sanitización
+
+### Findings warning · evaluar contexto
+
+- Telemetry/analytics opt-out posible
+- Permisos amplios (`*.read` `*.write`) en manifest
+- Dependencias copy-paste de proyectos abandonados
+
+### Archivar evidencia
+
+Reporte se guarda automático en `_ops/medusa-scan-<repo>-YYYY-MM-DD/` · retención permanente (junto a evaluación de adopción).
+
+Memorias: [[feedback_medusa_due_diligence_workflow]] · [[feedback_tool_adoption_controlled_rollback]] · [[feedback_optimizar_antes_de_alarmar]]
+
+---
+
 ## 📚 Referencias cruzadas
 
-- Memorias activas: `feedback_admin_module_seeding` · `feedback_audit_pulido_sistematico` · `feedback_servers_separados_por_programa`
+- Memorias activas: `feedback_admin_module_seeding` · `feedback_audit_pulido_sistematico` · `feedback_servers_separados_por_programa` · `feedback_bash_path_hijack_wsl_windows` · `feedback_nvm4w_node_migration_pm2` · `feedback_medusa_due_diligence_workflow`
 - Docs maestras: `Desktop/00-DOCS-MAESTRAS/` · arquitectura · ADRs
 - Security overrides: `.claude/security-rules/OVERRIDES.md` por proyecto
 - Backup status: `_backups/YYYY-MM-DD/` · retención 7d
